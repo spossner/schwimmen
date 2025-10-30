@@ -371,7 +371,7 @@ function processNextTurn(room: GameRoom) {
 }
 
 // Finish round and score
-function finishRound(room: GameRoom, threeAcesPlayerId: string | null) {
+function finishRound(room: GameRoom, _threeAcesPlayerId: string | null) {
   const { gameState } = room;
   gameState.phase = 'scoring';
 
@@ -518,9 +518,14 @@ wss.on('connection', (ws: WebSocket) => {
   });
 });
 
-const PORT = process.env.PORT || 3002;
-const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+const PORT = Number(process.env.PORT) || 3002;
 
-server.listen(PORT, HOST, () => {
-  console.log(`WebSocket server running on ${HOST}:${PORT}`);
-});
+if (process.env.NODE_ENV === 'production') {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`WebSocket server running on 0.0.0.0:${PORT}`);
+  });
+} else {
+  server.listen(PORT, () => {
+    console.log(`WebSocket server running on localhost:${PORT}`);
+  });
+}

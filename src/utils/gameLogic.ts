@@ -197,7 +197,7 @@ export function dealCards(players: Player[], deck: Card[]): {
  * Validates if a player action is legal
  */
 export function isValidAction(
-  player: Player,
+  _player: Player,
   action: string,
   hasFirstRoundCompleted: boolean
 ): boolean {

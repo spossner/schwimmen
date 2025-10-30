@@ -1,5 +1,5 @@
 import type { Card, Player, PlayerAction } from '../types/game';
-import { calculateScore, CARD_VALUES, hasThreeAces } from './gameLogic';
+import { calculateScore, hasThreeAces } from './gameLogic';
 
 /**
  * AI strategy for making decisions
@@ -141,7 +141,7 @@ export function getAIAction(
  */
 export function getAIDealerDecision(
   seenSet: Card[],
-  seenSetIndex: number
+  _seenSetIndex: number
 ): {
   keepSeenSet: boolean;
   confidence: number;
