@@ -1,0 +1,22 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+count.txt
+.env
+.env.local
+.nitro
+.tanstack
+.wrangler
+
+## IDE
+.idea/
+.vscode/
+
+## Panda
+styled-system
+styled-system-studio
+
+## Keep example env file
+!.env.example
