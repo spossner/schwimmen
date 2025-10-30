@@ -49,8 +49,8 @@ export function GameBoard({
 
   // Animate card exchanges
   useEffect(() => {
-    if (gameState.lastAction && gameState.lastAction.action !== 'skip' && gameState.lastAction.cardIds) {
-      const { playerName, action, cardIds } = gameState.lastAction;
+    if (gameState.lastAction && gameState.lastAction.action !== 'skip' && gameState.lastAction.takenCardIds) {
+      const { playerName, action, takenCardIds, putCardIds } = gameState.lastAction;
 
       // Don't animate our own actions
       if (gameState.lastAction.playerId === yourPlayerId) {
@@ -64,31 +64,29 @@ export function GameBoard({
         message = `${playerName} exchanged all cards`;
       }
 
-      if (message && cardIds) {
+      if (message && takenCardIds && putCardIds) {
         setLastActionMessage(message);
 
-        // Phase 1: Highlight cards being taken (grow and glow)
+        // Phase 1: Highlight cards being taken (grow and glow) - 2 seconds
         setAnimationPhase('taking');
-        setAnimatingCardIds(new Set(cardIds));
+        setAnimatingCardIds(new Set(takenCardIds));
 
-        // Phase 2: After 800ms, show the cards being put back
+        // Phase 2: After 2000ms, show the cards being put back - 2 seconds
         const timer1 = setTimeout(() => {
           setAnimationPhase('putting');
-          // The new cards in public pile have different IDs now
-          const newCardIds = gameState.publicCards.map(c => c.id);
-          setAnimatingCardIds(new Set(newCardIds));
-        }, 800);
+          setAnimatingCardIds(new Set(putCardIds));
+        }, 2000);
 
-        // Phase 3: After 1600ms total, zoom back to normal
+        // Phase 3: After 4000ms total, zoom back to normal
         const timer2 = setTimeout(() => {
           setAnimationPhase('none');
           setAnimatingCardIds(new Set());
-        }, 1600);
+        }, 4000);
 
-        // Clear message after 2000ms
+        // Clear message after 4000ms
         const timer3 = setTimeout(() => {
           setLastActionMessage(null);
-        }, 2000);
+        }, 4000);
 
         return () => {
           clearTimeout(timer1);
@@ -102,7 +100,7 @@ export function GameBoard({
       const timer = setTimeout(() => setLastActionMessage(null), 2000);
       return () => clearTimeout(timer);
     }
-  }, [gameState.lastAction, yourPlayerId, gameState.publicCards]);
+  }, [gameState.lastAction, yourPlayerId]);
 
   // Can close round only after first full round
   const canCloseRound = gameState.roundNumber > 0 || gameState.currentPlayerIndex >= gameState.players.length;

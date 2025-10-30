@@ -52,7 +52,8 @@ export interface GameState {
     playerId: string;
     playerName: string;
     action: PlayerAction;
-    cardIds?: string[]; // IDs of cards involved in the action
+    takenCardIds?: string[]; // IDs of cards taken from public pile
+    putCardIds?: string[]; // IDs of cards put back to public pile
     timestamp: number;
   } | null;
 }
