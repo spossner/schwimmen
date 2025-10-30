@@ -50,6 +50,7 @@ export interface GameState {
   roundClosedByPlayerId: string | null;
   lastAction: {
     playerId: string;
+    playerName: string;
     action: PlayerAction;
     timestamp: number;
   } | null;

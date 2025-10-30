@@ -283,6 +283,7 @@ function processPlayerAction(
   // Record action
   gameState.lastAction = {
     playerId,
+    playerName: player.name,
     action,
     timestamp: Date.now(),
   };

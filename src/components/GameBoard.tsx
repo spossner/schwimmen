@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { css } from '../../styled-system/css';
 import type { GameState, Card, PlayerAction } from '../types/game';
 import { CardHand } from './CardHand';
@@ -26,12 +26,16 @@ export function GameBoard({
 }: GameBoardProps) {
   const [selectedHandCard, setSelectedHandCard] = useState<Card | null>(null);
   const [selectedPublicCard, setSelectedPublicCard] = useState<Card | null>(null);
+  const [lastActionMessage, setLastActionMessage] = useState<string | null>(null);
 
   const yourPlayer = gameState.players.find((p) => p.id === yourPlayerId);
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isYourTurn = currentPlayer?.id === yourPlayerId;
   const dealer = gameState.players.find((p) => p.isDealer);
   const isYouDealer = dealer?.id === yourPlayerId;
+  const roundCloser = gameState.roundClosedByPlayerId
+    ? gameState.players.find(p => p.id === gameState.roundClosedByPlayerId)
+    : null;
 
   // Calculate your score
   const yourScore = useMemo(() => {
@@ -40,6 +44,28 @@ export function GameBoard({
     }
     return null;
   }, [yourPlayer]);
+
+  // Show last action message for 2 seconds
+  useEffect(() => {
+    if (gameState.lastAction && gameState.lastAction.action !== 'skip') {
+      const { playerName, action } = gameState.lastAction;
+      let message = '';
+
+      if (action === 'exchange-one') {
+        message = `${playerName} exchanged 1 card`;
+      } else if (action === 'exchange-all') {
+        message = `${playerName} exchanged all cards`;
+      } else if (action === 'close-round') {
+        message = `${playerName} closed the round!`;
+      }
+
+      if (message) {
+        setLastActionMessage(message);
+        const timer = setTimeout(() => setLastActionMessage(null), 2000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [gameState.lastAction]);
 
   // Can close round only after first full round
   const canCloseRound = gameState.roundNumber > 0 || gameState.currentPlayerIndex >= gameState.players.length;
@@ -585,18 +611,45 @@ export function GameBoard({
               >
                 {isYourTurn ? "Your Turn!" : `${currentPlayer?.name}'s Turn`}
               </p>
-              {gameState.phase === 'last-round' && (
+              {gameState.phase === 'last-round' && roundCloser && (
                 <p
                   className={css({
                     fontSize: 'sm',
                     color: 'orange.700',
                     marginTop: '4px',
+                    fontWeight: 'semibold',
                   })}
                 >
-                  Final round! Everyone gets one last move.
+                  Round closed by {roundCloser.name} - Last moves for everyone!
                 </p>
               )}
             </div>
+
+            {/* Last Action Animation */}
+            {lastActionMessage && (
+              <div
+                className={css({
+                  textAlign: 'center',
+                  marginBottom: '16px',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: 'purple.100',
+                  border: '2px solid',
+                  borderColor: 'purple.400',
+                  animation: 'fadeIn 0.3s ease-in-out',
+                })}
+              >
+                <p
+                  className={css({
+                    fontSize: 'md',
+                    fontWeight: 'bold',
+                    color: 'purple.800',
+                  })}
+                >
+                  {lastActionMessage}
+                </p>
+              </div>
+            )}
 
             {/* Public cards */}
             <div className={css({ marginBottom: '32px' })}>
