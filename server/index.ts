@@ -313,7 +313,7 @@ function processPlayerAction(
   processNextTurn(room);
 }
 
-// Get players who need to act after round closer
+// Get players who need to act after round closer (only non-eliminated players)
 function getPlayersAfterRoundCloser(gameState: GameState): Player[] {
   const closerIndex = gameState.players.findIndex(
     p => p.id === gameState.roundClosedByPlayerId
@@ -324,7 +324,11 @@ function getPlayersAfterRoundCloser(gameState: GameState): Player[] {
   let index = getNextPlayerIndex(closerIndex, gameState.players.length);
 
   while (index !== closerIndex) {
-    result.push(gameState.players[index]);
+    const player = gameState.players[index];
+    // Only include non-eliminated players
+    if (!player.isEliminated) {
+      result.push(player);
+    }
     index = getNextPlayerIndex(index, gameState.players.length);
   }
 

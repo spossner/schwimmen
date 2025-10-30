@@ -94,7 +94,7 @@ export function Card({ card, selected = false, onClick, faceDown = false, size =
         boxShadow: selected ? 'lg' : 'md',
         display: 'flex',
         flexDirection: 'column',
-        padding: size === 'small' ? '4px' : size === 'large' ? '12px' : '8px',
+        padding: size === 'small' ? '6px' : size === 'large' ? '12px' : '8px',
         cursor: onClick ? 'pointer' : 'default',
         position: 'relative',
         transition: 'all 0.2s',
@@ -108,20 +108,22 @@ export function Card({ card, selected = false, onClick, faceDown = false, size =
       })}
       onClick={onClick}
     >
-      {/* Top rank and suit */}
+      {/* Top rank and suit - horizontal */}
       <div
         className={css({
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
-          fontSize: size === 'small' ? 'sm' : size === 'large' ? '2xl' : 'lg',
+          gap: size === 'small' ? '2px' : '4px',
+          fontSize: size === 'small' ? 'md' : size === 'large' ? '2xl' : 'xl',
           fontWeight: 'bold',
           lineHeight: '1',
         })}
         style={{ color: suitColor }}
       >
         <div>{card.rank}</div>
-        <div>{suitSymbol}</div>
+        <div className={css({ fontSize: size === 'small' ? 'sm' : size === 'large' ? 'xl' : 'lg' })}>
+          {suitSymbol}
+        </div>
       </div>
 
       {/* Center suit symbol */}
@@ -131,28 +133,32 @@ export function Card({ card, selected = false, onClick, faceDown = false, size =
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: size === 'small' ? '2xl' : size === 'large' ? '6xl' : '4xl',
+          fontSize: size === 'small' ? '3xl' : size === 'large' ? '6xl' : '4xl',
+          overflow: 'hidden',
         })}
         style={{ color: suitColor }}
       >
         {suitSymbol}
       </div>
 
-      {/* Bottom rank and suit (rotated) */}
+      {/* Bottom rank and suit (rotated) - horizontal */}
       <div
         className={css({
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
-          fontSize: size === 'small' ? 'sm' : size === 'large' ? '2xl' : 'lg',
+          gap: size === 'small' ? '2px' : '4px',
+          fontSize: size === 'small' ? 'md' : size === 'large' ? '2xl' : 'xl',
           fontWeight: 'bold',
           lineHeight: '1',
           transform: 'rotate(180deg)',
+          alignSelf: 'flex-end',
         })}
         style={{ color: suitColor }}
       >
         <div>{card.rank}</div>
-        <div>{suitSymbol}</div>
+        <div className={css({ fontSize: size === 'small' ? 'sm' : size === 'large' ? 'xl' : 'lg' })}>
+          {suitSymbol}
+        </div>
       </div>
     </div>
   );
