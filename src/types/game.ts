@@ -52,6 +52,7 @@ export interface GameState {
     playerId: string;
     playerName: string;
     action: PlayerAction;
+    cardIds?: string[]; // IDs of cards involved in the action
     timestamp: number;
   } | null;
 }

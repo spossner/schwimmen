@@ -27,6 +27,8 @@ export function GameBoard({
   const [selectedHandCard, setSelectedHandCard] = useState<Card | null>(null);
   const [selectedPublicCard, setSelectedPublicCard] = useState<Card | null>(null);
   const [lastActionMessage, setLastActionMessage] = useState<string | null>(null);
+  const [animatingCardIds, setAnimatingCardIds] = useState<Set<string>>(new Set());
+  const [animationPhase, setAnimationPhase] = useState<'none' | 'taking' | 'putting'>('none');
 
   const yourPlayer = gameState.players.find((p) => p.id === yourPlayerId);
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -45,27 +47,62 @@ export function GameBoard({
     return null;
   }, [yourPlayer]);
 
-  // Show last action message for 2 seconds
+  // Animate card exchanges
   useEffect(() => {
-    if (gameState.lastAction && gameState.lastAction.action !== 'skip') {
-      const { playerName, action } = gameState.lastAction;
-      let message = '';
+    if (gameState.lastAction && gameState.lastAction.action !== 'skip' && gameState.lastAction.cardIds) {
+      const { playerName, action, cardIds } = gameState.lastAction;
 
+      // Don't animate our own actions
+      if (gameState.lastAction.playerId === yourPlayerId) {
+        return;
+      }
+
+      let message = '';
       if (action === 'exchange-one') {
         message = `${playerName} exchanged 1 card`;
       } else if (action === 'exchange-all') {
         message = `${playerName} exchanged all cards`;
-      } else if (action === 'close-round') {
-        message = `${playerName} closed the round!`;
       }
 
-      if (message) {
+      if (message && cardIds) {
         setLastActionMessage(message);
-        const timer = setTimeout(() => setLastActionMessage(null), 2000);
-        return () => clearTimeout(timer);
+
+        // Phase 1: Highlight cards being taken (grow and glow)
+        setAnimationPhase('taking');
+        setAnimatingCardIds(new Set(cardIds));
+
+        // Phase 2: After 800ms, show the cards being put back
+        const timer1 = setTimeout(() => {
+          setAnimationPhase('putting');
+          // The new cards in public pile have different IDs now
+          const newCardIds = gameState.publicCards.map(c => c.id);
+          setAnimatingCardIds(new Set(newCardIds));
+        }, 800);
+
+        // Phase 3: After 1600ms total, zoom back to normal
+        const timer2 = setTimeout(() => {
+          setAnimationPhase('none');
+          setAnimatingCardIds(new Set());
+        }, 1600);
+
+        // Clear message after 2000ms
+        const timer3 = setTimeout(() => {
+          setLastActionMessage(null);
+        }, 2000);
+
+        return () => {
+          clearTimeout(timer1);
+          clearTimeout(timer2);
+          clearTimeout(timer3);
+        };
       }
+    } else if (gameState.lastAction?.action === 'close-round') {
+      const { playerName } = gameState.lastAction;
+      setLastActionMessage(`${playerName} closed the round!`);
+      const timer = setTimeout(() => setLastActionMessage(null), 2000);
+      return () => clearTimeout(timer);
     }
-  }, [gameState.lastAction]);
+  }, [gameState.lastAction, yourPlayerId, gameState.publicCards]);
 
   // Can close round only after first full round
   const canCloseRound = gameState.roundNumber > 0 || gameState.currentPlayerIndex >= gameState.players.length;
@@ -659,6 +696,8 @@ export function GameBoard({
                 selectedCard={selectedPublicCard}
                 onCardClick={isYourTurn ? setSelectedPublicCard : undefined}
                 size="large"
+                animatingCardIds={animatingCardIds}
+                animationPhase={animationPhase}
               />
             </div>
 

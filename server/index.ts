@@ -250,6 +250,9 @@ function processPlayerAction(
     return;
   }
 
+  // Track card IDs for animation
+  let cardIds: string[] = [];
+
   // Process action
   if (action === 'skip') {
     // Do nothing
@@ -259,12 +262,14 @@ function processPlayerAction(
     const publicIndex = gameState.publicCards.findIndex(c => c.id === publicCardToTake.id);
 
     if (handIndex >= 0 && publicIndex >= 0) {
+      cardIds = [publicCardToTake.id]; // Track the public card being taken
       const temp = player.hand[handIndex];
       player.hand[handIndex] = gameState.publicCards[publicIndex];
       gameState.publicCards[publicIndex] = temp;
     }
   } else if (action === 'exchange-all') {
     // Exchange all cards
+    cardIds = gameState.publicCards.map(c => c.id); // Track all public cards being taken
     const temp = [...player.hand];
     player.hand = [...gameState.publicCards];
     gameState.publicCards = temp;
@@ -285,6 +290,7 @@ function processPlayerAction(
     playerId,
     playerName: player.name,
     action,
+    cardIds: cardIds.length > 0 ? cardIds : undefined,
     timestamp: Date.now(),
   };
 

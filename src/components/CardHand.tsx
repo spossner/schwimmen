@@ -9,6 +9,8 @@ interface CardHandProps {
   faceDown?: boolean;
   label?: string;
   size?: 'small' | 'medium' | 'large';
+  animatingCardIds?: Set<string>;
+  animationPhase?: 'none' | 'taking' | 'putting';
 }
 
 export function CardHand({
@@ -18,6 +20,8 @@ export function CardHand({
   faceDown = false,
   label,
   size = 'medium',
+  animatingCardIds,
+  animationPhase = 'none',
 }: CardHandProps) {
   return (
     <div
@@ -50,16 +54,33 @@ export function CardHand({
         })}
       >
         {cards.length > 0 ? (
-          cards.map((card) => (
-            <Card
-              key={card.id}
-              card={card}
-              selected={selectedCard?.id === card.id}
-              onClick={onCardClick ? () => onCardClick(card) : undefined}
-              faceDown={faceDown}
-              size={size}
-            />
-          ))
+          cards.map((card) => {
+            const isAnimating = animatingCardIds?.has(card.id);
+            return (
+              <div
+                key={card.id}
+                className={css({
+                  transition: 'all 0.4s ease-in-out',
+                  transform: isAnimating && animationPhase === 'taking'
+                    ? 'scale(1.15)'
+                    : isAnimating && animationPhase === 'putting'
+                    ? 'scale(1.15)'
+                    : 'scale(1)',
+                  filter: isAnimating
+                    ? 'drop-shadow(0 0 20px rgba(147, 51, 234, 0.8))'
+                    : 'none',
+                })}
+              >
+                <Card
+                  card={card}
+                  selected={selectedCard?.id === card.id}
+                  onClick={onCardClick ? () => onCardClick(card) : undefined}
+                  faceDown={faceDown}
+                  size={size}
+                />
+              </div>
+            );
+          })
         ) : (
           <>
             <Card card={null} size={size} />
