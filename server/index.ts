@@ -426,7 +426,9 @@ wss.on('connection', (ws: WebSocket) => {
 
         broadcastGameState(room);
       } else if (message.type === 'join-game') {
-        const room = rooms.get(message.roomId);
+        // Case-insensitive room ID lookup
+        const roomId = message.roomId.toLowerCase();
+        const room = rooms.get(roomId);
         if (!room) {
           ws.send(JSON.stringify({ type: 'error', message: 'Room not found' }));
           return;

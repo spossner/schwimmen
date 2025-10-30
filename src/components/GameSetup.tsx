@@ -39,7 +39,8 @@ export function GameSetup({ onCreateGame, onJoinGame }: GameSetupProps) {
       return;
     }
 
-    onJoinGame(roomId.trim(), playerName.trim());
+    // Case-insensitive room ID
+    onJoinGame(roomId.trim().toLowerCase(), playerName.trim());
   };
 
   return (
@@ -287,7 +288,7 @@ export function GameSetup({ onCreateGame, onJoinGame }: GameSetupProps) {
                 type="text"
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
-                placeholder="Enter room ID"
+                placeholder="Enter room ID (case insensitive)"
                 className={css({
                   width: '100%',
                   padding: '12px',
