@@ -26,6 +26,7 @@ export type GamePhase =
   | 'dealer-decision' // Dealer choosing which set to keep
   | 'playing'         // Normal turn-based play
   | 'last-round'      // Round closed, everyone gets last turn
+  | 'animating'       // Animating card exchange
   | 'scoring'         // Revealing and scoring hands
   | 'round-end'       // Showing results
   | 'game-end';       // Game over
@@ -55,6 +56,11 @@ export interface GameState {
     takenCardIds?: string[]; // IDs of cards taken from public pile
     putCardIds?: string[]; // IDs of cards put back to public pile
     timestamp: number;
+  } | null;
+  animationState: {
+    phase: 'taking' | 'putting' | 'none';
+    cardIds: string[];
+    oldPublicCards?: Card[]; // Cards before exchange (for animation)
   } | null;
 }
 

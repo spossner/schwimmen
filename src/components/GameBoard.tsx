@@ -27,9 +27,6 @@ export function GameBoard({
   const [selectedHandCard, setSelectedHandCard] = useState<Card | null>(null);
   const [selectedPublicCard, setSelectedPublicCard] = useState<Card | null>(null);
   const [lastActionMessage, setLastActionMessage] = useState<string | null>(null);
-  const [animatingCardIds, setAnimatingCardIds] = useState<Set<string>>(new Set());
-  const [animationPhase, setAnimationPhase] = useState<'none' | 'taking' | 'putting'>('none');
-  const [displayedPublicCards, setDisplayedPublicCards] = useState<Card[]>([]);
 
   const yourPlayer = gameState.players.find((p) => p.id === yourPlayerId);
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -48,80 +45,38 @@ export function GameBoard({
     return null;
   }, [yourPlayer]);
 
-  // Animate card exchanges
+  // Show action message
   useEffect(() => {
-    if (gameState.lastAction && gameState.lastAction.action !== 'skip' && gameState.lastAction.takenCardIds) {
-      const { playerName, action, takenCardIds, putCardIds } = gameState.lastAction;
-
-      // Don't animate our own actions
-      if (gameState.lastAction.playerId === yourPlayerId) {
-        // Immediately update displayed cards for our own actions
-        setDisplayedPublicCards(gameState.publicCards);
-        return;
-      }
-
+    if (gameState.lastAction && gameState.lastAction.action !== 'skip') {
+      const { playerName, action } = gameState.lastAction;
       let message = '';
+
       if (action === 'exchange-one') {
         message = `${playerName} exchanged 1 card`;
       } else if (action === 'exchange-all') {
         message = `${playerName} exchanged all cards`;
+      } else if (action === 'close-round') {
+        message = `${playerName} closed the round!`;
       }
 
-      if (message && takenCardIds && putCardIds) {
+      if (message) {
         setLastActionMessage(message);
-
-        // Store the old public cards (before exchange) for animation
-        // We need to reconstruct them based on takenCardIds
-        const oldPublicCards = [...displayedPublicCards];
-
-        // Phase 1: Highlight OLD cards being taken (grow and glow) - 2 seconds
-        setAnimationPhase('taking');
-        setAnimatingCardIds(new Set(takenCardIds));
-        // Keep showing old cards
-        setDisplayedPublicCards(oldPublicCards);
-
-        // Phase 2: After 2000ms, swap to NEW cards and highlight them - 2 seconds
-        const timer1 = setTimeout(() => {
-          setAnimationPhase('putting');
-          setAnimatingCardIds(new Set(putCardIds));
-          // NOW update to the new public cards from gameState
-          setDisplayedPublicCards(gameState.publicCards);
-        }, 2000);
-
-        // Phase 3: After 4000ms total, zoom back to normal
-        const timer2 = setTimeout(() => {
-          setAnimationPhase('none');
-          setAnimatingCardIds(new Set());
-        }, 4000);
-
-        // Clear message after 4000ms
-        const timer3 = setTimeout(() => {
-          setLastActionMessage(null);
-        }, 4000);
-
-        return () => {
-          clearTimeout(timer1);
-          clearTimeout(timer2);
-          clearTimeout(timer3);
-        };
+        const timer = setTimeout(() => setLastActionMessage(null), 4000);
+        return () => clearTimeout(timer);
       }
-    } else if (gameState.lastAction?.action === 'close-round') {
-      const { playerName } = gameState.lastAction;
-      setLastActionMessage(`${playerName} closed the round!`);
-      const timer = setTimeout(() => setLastActionMessage(null), 2000);
-      return () => clearTimeout(timer);
-    } else {
-      // No animation, just update displayed cards
-      setDisplayedPublicCards(gameState.publicCards);
     }
-  }, [gameState.lastAction, yourPlayerId, gameState.publicCards]);
+  }, [gameState.lastAction]);
 
-  // Initialize displayed public cards
-  useEffect(() => {
-    if (displayedPublicCards.length === 0) {
-      setDisplayedPublicCards(gameState.publicCards);
-    }
-  }, [gameState.publicCards, displayedPublicCards.length]);
+  // Determine which cards to display and animate
+  const displayedPublicCards = gameState.animationState?.oldPublicCards && gameState.animationState.phase === 'taking'
+    ? gameState.animationState.oldPublicCards
+    : gameState.publicCards;
+
+  const animatingCardIds = gameState.animationState
+    ? new Set(gameState.animationState.cardIds)
+    : new Set<string>();
+
+  const animationPhase = gameState.animationState?.phase || 'none';
 
   // Can close round only after first full round
   const canCloseRound = gameState.roundNumber > 0 || gameState.currentPlayerIndex >= gameState.players.length;
@@ -336,6 +291,96 @@ export function GameBoard({
             >
               Take Other Set
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Animating card exchange
+  if (gameState.phase === 'animating') {
+    return (
+      <div
+        className={css({
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          padding: '20px',
+        })}
+      >
+        <div
+          className={css({
+            maxWidth: '1400px',
+            margin: '0 auto',
+            display: 'flex',
+            gap: '20px',
+          })}
+        >
+          {/* Sidebar */}
+          <div>
+            <PlayerList
+              players={gameState.players}
+              currentPlayerId={currentPlayer?.id}
+              yourPlayerId={yourPlayerId}
+            />
+          </div>
+
+          {/* Main play area */}
+          <div className={css({ flex: 1 })}>
+            <div
+              className={css({
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                padding: '32px',
+                boxShadow: '2xl',
+              })}
+            >
+              {/* Animation message */}
+              {lastActionMessage && (
+                <div
+                  className={css({
+                    textAlign: 'center',
+                    marginBottom: '24px',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: 'purple.100',
+                    border: '2px solid',
+                    borderColor: 'purple.400',
+                  })}
+                >
+                  <p
+                    className={css({
+                      fontSize: 'lg',
+                      fontWeight: 'bold',
+                      color: 'purple.800',
+                    })}
+                  >
+                    {lastActionMessage}
+                  </p>
+                </div>
+              )}
+
+              {/* Public cards with animation */}
+              <div className={css({ marginBottom: '32px' })}>
+                <CardHand
+                  cards={displayedPublicCards}
+                  label="Public Cards"
+                  size="large"
+                  animatingCardIds={animatingCardIds}
+                  animationPhase={animationPhase}
+                />
+              </div>
+
+              {/* Your hand */}
+              {yourPlayer && (
+                <div>
+                  <CardHand
+                    cards={yourPlayer.hand}
+                    label="Your Hand"
+                    size="large"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

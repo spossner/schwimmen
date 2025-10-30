@@ -98,6 +98,7 @@ function createGameRoom(config: GameConfig, creatorName: string): GameRoom {
     playersWhoActedAfterClose: new Set(),
     roundClosedByPlayerId: null,
     lastAction: null,
+    animationState: null,
   };
 
   const room: GameRoom = {
@@ -253,6 +254,8 @@ function processPlayerAction(
   // Track card IDs for animation
   let takenCardIds: string[] = [];
   let putCardIds: string[] = [];
+  let oldPublicCards: Card[] = [];
+  let shouldAnimate = false;
 
   // Process action
   if (action === 'skip') {
@@ -263,16 +266,22 @@ function processPlayerAction(
     const publicIndex = gameState.publicCards.findIndex(c => c.id === publicCardToTake.id);
 
     if (handIndex >= 0 && publicIndex >= 0) {
-      takenCardIds = [publicCardToTake.id]; // Track the public card being taken
-      putCardIds = [cardToExchange.id]; // Track the hand card being put to public
+      takenCardIds = [publicCardToTake.id];
+      putCardIds = [cardToExchange.id];
+      oldPublicCards = [...gameState.publicCards]; // Save old state for animation
+      shouldAnimate = true;
+
       const temp = player.hand[handIndex];
       player.hand[handIndex] = gameState.publicCards[publicIndex];
       gameState.publicCards[publicIndex] = temp;
     }
   } else if (action === 'exchange-all') {
     // Exchange all cards
-    takenCardIds = gameState.publicCards.map(c => c.id); // Track all public cards being taken
-    putCardIds = player.hand.map(c => c.id); // Track all hand cards being put to public
+    takenCardIds = gameState.publicCards.map(c => c.id);
+    putCardIds = player.hand.map(c => c.id);
+    oldPublicCards = [...gameState.publicCards]; // Save old state for animation
+    shouldAnimate = true;
+
     const temp = [...player.hand];
     player.hand = [...gameState.publicCards];
     gameState.publicCards = temp;
@@ -314,14 +323,52 @@ function processPlayerAction(
     }
   }
 
-  // Move to next player
-  gameState.currentPlayerIndex = getNextPlayerIndex(
-    gameState.currentPlayerIndex,
-    gameState.players.length
-  );
+  // Handle animation if needed
+  if (shouldAnimate && takenCardIds.length > 0 && putCardIds.length > 0) {
+    // Start animation - Phase 1: Taking
+    gameState.phase = 'animating';
+    gameState.animationState = {
+      phase: 'taking',
+      cardIds: takenCardIds,
+      oldPublicCards: oldPublicCards,
+    };
 
-  broadcastGameState(room);
-  processNextTurn(room);
+    broadcastGameState(room);
+
+    // After 2 seconds, switch to putting phase
+    setTimeout(() => {
+      gameState.animationState = {
+        phase: 'putting',
+        cardIds: putCardIds,
+      };
+      broadcastGameState(room);
+
+      // After another 2 seconds, end animation and continue
+      setTimeout(() => {
+        gameState.animationState = null;
+        gameState.phase = gameState.roundClosedByPlayerId ? 'last-round' : 'playing';
+
+        // Move to next player
+        gameState.currentPlayerIndex = getNextPlayerIndex(
+          gameState.currentPlayerIndex,
+          gameState.players.length
+        );
+
+        broadcastGameState(room);
+        processNextTurn(room);
+      }, 2000);
+    }, 2000);
+  } else {
+    // No animation, proceed immediately
+    // Move to next player
+    gameState.currentPlayerIndex = getNextPlayerIndex(
+      gameState.currentPlayerIndex,
+      gameState.players.length
+    );
+
+    broadcastGameState(room);
+    processNextTurn(room);
+  }
 }
 
 // Get players who need to act after round closer (only non-eliminated players)
@@ -349,6 +396,12 @@ function getPlayersAfterRoundCloser(gameState: GameState): Player[] {
 // Process AI turn
 function processNextTurn(room: GameRoom) {
   const { gameState } = room;
+
+  // Don't process turns during animation
+  if (gameState.phase === 'animating') {
+    return;
+  }
+
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
 
   // Skip eliminated players
